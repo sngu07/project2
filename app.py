@@ -13,7 +13,7 @@ import os
 # 1. 설정 및 상수 정의
 # =========================================================
 # 모델 파일 경로 설정
-MODEL_PATH = 'model.joblib' 
+MODEL_PATH = 'seq_sign_model_final.joblib' 
 SEQ_LENGTH = 40
 
 # 지도 및 화면 설정
@@ -201,3 +201,4 @@ else:
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True,
     )
+
