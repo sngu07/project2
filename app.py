@@ -195,23 +195,46 @@ def show_intro_page():
 
 def show_simulation_page():
     st.header("🤖 Robot Simulation")
+    
+    # 1. 모델 로딩 대기 표시 (사용자가 멈춘 줄 알지 않게 함)
+    with st.spinner("🧠 AI 모델을 불러오는 중입니다... (최초 1회는 시간이 걸릴 수 있습니다)"):
+        if not os.path.exists(MODEL_PATH):
+            st.error(f"⚠️ `{MODEL_PATH}` 파일을 찾을 수 없습니다. 경로를 확인해주세요.")
+            return
+        # 모델을 미리 로드하여 캐싱 확실히 하기
+        load_model()
+
     st.markdown("""
-    왼쪽은 **로봇 시뮬레이션 맵**, 오른쪽은 **나의 웹캠**입니다.  
-    수화를 인식하면 로봇이 해당 장소로 이동합니다.
+    왼쪽은 **로봇 시뮬레이션**, 오른쪽은 **웹캠**입니다.  
+    카메라가 켜질 때까지 **5~10초** 정도 걸릴 수 있습니다. 'START' 버튼을 눌러주세요.
     """)
 
-    if not os.path.exists(MODEL_PATH):
-        st.error(f"⚠️ `{MODEL_PATH}` 파일을 찾을 수 없습니다.")
-        return
+    # 2. 연결 속도 개선을 위한 STUN 서버 추가
+    # 구글의 기본 서버 외에 백업 서버들을 추가하여 연결 성공률을 높입니다.
+    rtc_config = RTCConfiguration({
+        "iceServers": [
+            {"urls": ["stun:stun.l.google.com:19302"]},
+            {"urls": ["stun:stun1.l.google.com:19302"]},
+            {"urls": ["stun:stun2.l.google.com:19302"]},
+            {"urls": ["stun:stun3.l.google.com:19302"]},
+        ]
+    })
 
+    # 3. WebRTC 스트리머 실행
     ctx = webrtc_streamer(
         key="sign-language",
         video_processor_factory=SignLanguageProcessor,
-        rtc_configuration=RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}),
-        media_stream_constraints={"video": True, "audio": False},
+        rtc_configuration=rtc_config,
+        media_stream_constraints={
+            "video": {
+                "width": {"ideal": 480},  # 해상도를 낮춰서 전송 속도 향상
+                "height": {"ideal": 360}, 
+                "frameRate": {"ideal": 15} # 프레임 수를 낮춰서 버벅임 방지
+            }, 
+            "audio": False
+        },
         async_processing=True,
     )
-
 # =========================================================
 # 6. Main App Structure
 # =========================================================
@@ -229,3 +252,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
